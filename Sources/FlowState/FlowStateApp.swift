@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import FlowCore
 #endif
 
-@main struct FlowstateApp: App {
+@main struct FlowStateApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -180,7 +180,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Flowstate").font(.title2.bold())
+                    Text("Flow State").font(.title2.bold())
                     Text("Local speech + cleanup experiments").foregroundStyle(.secondary)
                 }
                 Spacer()

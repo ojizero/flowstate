@@ -1,0 +1,26 @@
+min_version = "2026.9.0"
+
+[vars]
+xcode_version = "27.0"
+swift_version = "6.4"
+swift_tool = "6.4.0-xcode-27.0"
+
+[tools]
+# `mise run setup` registers Xcode's toolchain under this project-specific version.
+# Apple's SDK and SwiftUI compiler plugins must match the Swift compiler.
+swift = "{{ vars.swift_tool }}"
+python = "3.13.15"
+
+[env]
+DEVELOPER_DIR = "/Applications/Xcode.app/Contents/Developer"
+FLOWSTATE_XCODE_VERSION = "{{ vars.xcode_version }}"
+FLOWSTATE_SWIFT_VERSION = "{{ vars.swift_version }}"
+FLOWSTATE_SWIFT_TOOL = "{{ vars.swift_tool }}"
+
+[settings]
+# Bootstrap registers Apple's compiler before any task attempts a Swift download.
+task.run_auto_install = false
+
+[tasks.check]
+description = "Run tests and verify the iOS build in sequence"
+run = [{ task = "test" }, { task = "build-ios" }]

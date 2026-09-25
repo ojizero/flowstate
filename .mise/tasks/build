@@ -1,0 +1,5 @@
+#!/bin/bash
+#MISE description="Build the macOS app executable and CLI for debugging"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+swift build "$@"

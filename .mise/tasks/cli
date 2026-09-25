@@ -1,0 +1,5 @@
+#!/bin/bash
+#MISE description="Run the local CLI, forwarding all arguments"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+swift run flowstate-cli "$@"

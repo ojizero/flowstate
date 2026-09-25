@@ -198,6 +198,7 @@ public struct PersonalizationStore: Sendable {
     public static func local() throws -> Self {
         let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                appropriateFor: nil, create: true)
+        // Retain the original storage path so a display-name change does not lose saved edits.
         return Self(url: root.appendingPathComponent("Flowstate/personalization.json"))
     }
     public func load() throws -> PersonalizationProfile {

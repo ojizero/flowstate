@@ -1,0 +1,7 @@
+#!/bin/bash
+#MISE description="Build the iOS app without device signing"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+/usr/bin/xcodebuild -project FlowState.xcodeproj -scheme FlowState \
+    -destination 'generic/platform=iOS' -derivedDataPath build/xcode-ios \
+    CODE_SIGNING_ALLOWED=NO build "$@"

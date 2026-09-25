@@ -1,0 +1,11 @@
+#!/bin/bash
+#MISE description="Build and ad-hoc sign build/Flow State.app"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+swift build -c release --product FlowState
+bin_dir="$(swift build -c release --show-bin-path)"
+mkdir -p "$FLOWSTATE_APP/Contents/MacOS"
+cp "$bin_dir/FlowState" "$FLOWSTATE_APP/Contents/MacOS/FlowState"
+cp Resources/Info.plist "$FLOWSTATE_APP/Contents/Info.plist"
+/usr/bin/codesign --force --sign - "$FLOWSTATE_APP"
+printf 'Built %s\n' "$FLOWSTATE_APP"

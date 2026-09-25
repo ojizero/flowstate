@@ -1,0 +1,17 @@
+#!/bin/bash
+#MISE description="Register pinned Xcode Swift with Mise and install Python"
+source "$(dirname "$0")/../lib/common.sh"
+require_xcode
+toolchain="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr"
+existing="$(mise where "swift@$FLOWSTATE_SWIFT_TOOL" 2>/dev/null || true)"
+if [[ -n "$existing" ]]; then
+    if [[ ! "$existing" -ef "$toolchain" ]]; then
+        echo "swift@$FLOWSTATE_SWIFT_TOOL is already linked to $existing, not $toolchain." >&2
+        echo "Choose a different swift_tool label in mise.local.toml for this Xcode installation." >&2
+        exit 1
+    fi
+else
+    mise link "swift@$FLOWSTATE_SWIFT_TOOL" "$toolchain"
+fi
+mise install python
+mise run doctor

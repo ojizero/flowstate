@@ -1,0 +1,4 @@
+#!/bin/bash
+#MISE description="Stop app processes launched from this checkout"
+source "$(dirname "$0")/../lib/common.sh"
+python .mise/lib/app.py stop

@@ -1,0 +1,7 @@
+#!/bin/bash
+#MISE description="Rebuild, stop, and relaunch the app; accepts app arguments"
+source "$(dirname "$0")/../lib/common.sh"
+# Build successfully before interrupting the running app.
+mise run bundle
+python .mise/lib/app.py stop
+python .mise/lib/app.py start "$@"

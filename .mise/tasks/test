@@ -1,0 +1,5 @@
+#!/bin/bash
+#MISE description="Run Swift tests"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+swift test "$@"

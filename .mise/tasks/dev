@@ -1,0 +1,4 @@
+#!/bin/bash
+#MISE description="Build and restart Flow State; accepts app arguments"
+source "$(dirname "$0")/../lib/common.sh"
+mise run restart "$@"

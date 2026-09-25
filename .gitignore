@@ -2,6 +2,7 @@
 .swiftpm/
 build/
 .DS_Store
+mise.local.toml
 *.xcuserstate
 xcuserdata/
 # Recordings and exported experiments stay private.

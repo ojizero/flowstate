@@ -34,7 +34,7 @@
         };
         A00000000000000000000005 = {
             isa = PBXFileSystemSynchronizedRootGroup;
-            path = Sources/Flowstate; sourceTree = "<group>";
+            path = Sources/FlowState; sourceTree = "<group>";
         };
         A00000000000000000000006 = {
             isa = PBXNativeTarget;
@@ -42,13 +42,13 @@
             buildPhases = (A00000000000000000000008, A00000000000000000000009);
             buildRules = (); dependencies = ();
             fileSystemSynchronizedGroups = (A00000000000000000000004, A00000000000000000000005);
-            name = Flowstate; productName = Flowstate;
+            name = FlowState; productName = "Flow State";
             productReference = A00000000000000000000007;
             productType = "com.apple.product-type.application";
         };
         A00000000000000000000007 = {
             isa = PBXFileReference; explicitFileType = wrapper.application;
-            path = Flowstate.app; sourceTree = BUILT_PRODUCTS_DIR;
+            path = "Flow State.app"; sourceTree = BUILT_PRODUCTS_DIR;
         };
         A00000000000000000000008 = {
             isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;
@@ -86,8 +86,8 @@
         A00000000000000000000014 = {
             isa = XCBuildConfiguration; name = Debug;
             buildSettings = {
-                PRODUCT_BUNDLE_IDENTIFIER = local.flowstate.poc; PRODUCT_NAME = "$(TARGET_NAME)";
-                GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Flowstate;
+                PRODUCT_BUNDLE_IDENTIFIER = local.flowstate.poc; PRODUCT_NAME = "Flow State"; EXECUTABLE_NAME = FlowState; SWIFT_MODULE_NAME = FlowState;
+                GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Flow State";
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;
                 INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
                 CODE_SIGN_STYLE = Automatic; ENABLE_APP_SANDBOX = YES;
@@ -100,8 +100,8 @@
         A00000000000000000000015 = {
             isa = XCBuildConfiguration; name = Release;
             buildSettings = {
-                PRODUCT_BUNDLE_IDENTIFIER = local.flowstate.poc; PRODUCT_NAME = "$(TARGET_NAME)";
-                GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Flowstate;
+                PRODUCT_BUNDLE_IDENTIFIER = local.flowstate.poc; PRODUCT_NAME = "Flow State"; EXECUTABLE_NAME = FlowState; SWIFT_MODULE_NAME = FlowState;
+                GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Flow State";
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;
                 INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
                 CODE_SIGN_STYLE = Automatic; ENABLE_APP_SANDBOX = YES;

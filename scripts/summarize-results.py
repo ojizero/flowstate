@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make a readable local comparison from an exported Flowstate experiment."""
+"""Make a readable local comparison from an exported Flow State experiment."""
 import json
 from pathlib import Path
 import sys

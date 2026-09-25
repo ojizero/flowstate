@@ -1,0 +1,8 @@
+#!/bin/bash
+#MISE description="Generate a Markdown comparison from an experiment JSON file"
+source "$(dirname "$0")/../lib/common.sh"
+if [[ "$#" != 1 ]]; then
+    echo "Usage: mise run report path/to/experiment.json" >&2
+    exit 2
+fi
+python scripts/summarize-results.py "$1"

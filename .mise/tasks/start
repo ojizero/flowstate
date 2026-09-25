@@ -1,0 +1,4 @@
+#!/bin/bash
+#MISE description="Launch the built app; pass --results path.json to load an experiment"
+source "$(dirname "$0")/../lib/common.sh"
+python .mise/lib/app.py start "$@"

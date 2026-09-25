@@ -1,0 +1,8 @@
+#!/bin/bash
+#MISE description="Stop this checkout's app and remove generated build artifacts"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+python .mise/lib/app.py stop
+swift package clean
+rm -rf -- "$FLOWSTATE_APP" "$FLOWSTATE_ROOT/build/xcode-ios" "$FLOWSTATE_ROOT/build/xcode-mac" "$FLOWSTATE_ROOT/build/logs"
+echo "Removed build artifacts. Recordings, results, and personalization remain available."

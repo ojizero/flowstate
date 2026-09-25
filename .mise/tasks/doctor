@@ -1,0 +1,10 @@
+#!/bin/bash
+#MISE description="Check pinned Xcode, Swift, SDKs, and Python"
+source "$(dirname "$0")/../lib/common.sh"
+require_toolchain
+/usr/bin/xcodebuild -version
+swift --version
+python --version
+printf 'macOS SDK: %s\n' "$(/usr/bin/xcrun --sdk macosx --show-sdk-version)"
+printf 'iOS SDK: %s\n' "$(/usr/bin/xcrun --sdk iphoneos --show-sdk-version)"
+printf 'Swift executable: %s\n' "$(command -v swift)"

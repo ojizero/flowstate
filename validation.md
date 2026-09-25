@@ -10,6 +10,12 @@ Tested on September 25, 2026 with an Apple M3 Max, 48 GB RAM, macOS 27.0 build 2
 - The packaged macOS app launches. Visual UI inspection was unavailable because this environment has no screen-capture access. Inference was exercised through the CLI using the same core as the UI.
 - Synthetic recordings exercised actual `.m4a` decoding, model downloads, Arabic and English recognition, all cleanup trials, and JSON export. No recording was submitted to an external transcription provider.
 
+## Mise and app naming
+
+The app displays **Flow State**, with `FlowState` as the Swift target and executable. Mise pins Xcode 27.0, its Apple Swift 6.4 compiler, and Python 3.13.15. Setup succeeded after removing the project's Swift toolchain link, confirming it can register the compiler without an existing Mise installation of Swift.
+
+`mise run check` passed all 13 tests and built the iOS app without signing. The release macOS bundle built and launched. Start, status, stop, restart, and clean were exercised, including rebuilding after clean and forwarding `--results` through `dev` to load the saved Voice Memo experiment. The CLI capabilities and Markdown report tasks also succeeded. These checks do not add a physical iPhone inference test or a visual UI inspection.
+
 ## Supplied Voice Memo
 
 The supplied file, "Fallacies of productivity", is 99.69 seconds, mono AAC at 48 kHz. Two full experiment runs are saved under the git-ignored `Results/` directory. The first used pipeline version 1; version 2 uses stronger cleanup instructions and groups candidates into six-second intervals for LLM reconciliation.

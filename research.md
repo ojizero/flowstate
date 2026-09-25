@@ -41,8 +41,8 @@ Privacy and cost are promising properties of this architecture: local inference 
 
 ## Local personalization
 
-[Apple's contextualStrings documentation](https://developer.apple.com/documentation/speech/analysiscontext/contextualstrings) describes short vocabulary hints for DictationTranscriber and limits them to 100 phrases. Flowstate supplies those hints through AnalysisContext for the dictation pass. This documented support should not be generalized to SpeechTranscriber.
+[Apple's contextualStrings documentation](https://developer.apple.com/documentation/speech/analysiscontext/contextualstrings) describes short vocabulary hints for DictationTranscriber and limits them to 100 phrases. Flow State supplies those hints through AnalysisContext for the dictation pass. This documented support should not be generalized to SpeechTranscriber.
 
-[Apple's prompting guidance](https://developer.apple.com/documentation/foundationmodels/prompting-an-on-device-foundation-model) describes using instructions and examples to guide generation. Flowstate stores user edits locally, retrieves relevant examples, and includes them in cleanup requests. Explicit glossary aliases are handled separately as whole-phrase replacements. Neither mechanism updates the built-in model's weights.
+[Apple's prompting guidance](https://developer.apple.com/documentation/foundationmodels/prompting-an-on-device-foundation-model) describes using instructions and examples to guide generation. Flow State stores user edits locally, retrieves relevant examples, and includes them in cleanup requests. Explicit glossary aliases are handled separately as whole-phrase replacements. Neither mechanism updates the built-in model's weights.
 
 [Foundation Models adapters](https://developer.apple.com/apple-intelligence/foundation-models-adapter/) provide a separate training and deployment route with an adapter entitlement. The POC does not require adapters or an entitlement; its editable local profile provides a smaller experiment that can be compared directly with a baseline.
