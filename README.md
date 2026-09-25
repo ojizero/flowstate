@@ -117,3 +117,7 @@ mise run test
 `--no-personalization` bypasses the local profile. `--profile /path/to/profile.json` selects a separate profile for experiments without modifying your usual glossary or learned edits. These options work with `clean` and `transcribe`; the profile commands also accept `--profile`.
 
 The source is split into `Sources/FlowCore` for the pipeline, `Sources/FlowState` for SwiftUI, and `Sources/FlowCLI` for repeatable terminal runs. There are no third-party dependencies. See [research.md](research.md) for API findings and [validation.md](validation.md) for the tests performed, including the supplied Voice Memo.
+
+## License
+
+[MIT](LICENSE).
