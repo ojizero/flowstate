@@ -36,3 +36,13 @@ This sample supports the speed and local-execution feasibility of the pipeline. 
 ## Remaining experiments
 
 The most useful next comparison is resetting the Arabic recognizer on shorter audio windows, with overlap to preserve boundary words, then comparing against a manually corrected transcript. This may help recognition after English passages, but has not been tested here. If built-in recognition still omits Arabic, a local third-party multilingual speech model would be a separate architectural experiment. This POC intentionally stays within Apple's built-in models.
+
+## Personalization checks
+
+Pipeline version 3 adds a local glossary and correction examples. Thirteen tests pass, including seven new checks for mixed-script phrase boundaries, conflicting aliases, extracting multiple edits, insertions/deletions, disabled personalization, prompt budgets, persistence, corrupt-file handling, and opening old experiments.
+
+A separate temporary profile was used for live testing. It defined `to doist` as an alias for `Todoist` and learned an edit from "We should review the pool request before deploying." to "We should review the pull request before deploying." On the new input "Please check the pool request in to doist before deploying.", the control left "pool request" unchanged. Personalized cleanup produced "Please check the pull request in Todoist before deploying." The output recorded the actual glossary/example context used.
+
+The initial prompting attempt did not apply the saved correction; naming the mistaken phrase and the preferred phrase explicitly, alongside their original context, made the test succeed. This is one synthetic case, not a general accuracy result. The glossary replacement is deterministic; learning from examples still depends on model behavior. No test vocabulary or synthetic edits were added to the user's real profile.
+
+An Arabic audio smoke test also exercised `AnalysisContext.contextualStrings` through DictationTranscriber and exported the supplied hint list. The iOS build verifies compilation only; personalization quality and persistence on a physical iPhone still need testing.

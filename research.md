@@ -38,3 +38,11 @@ Use the user's Voice Memos to test dialect, code-switch boundaries, distant spee
 The confidence merge is a transparent baseline. Scores between SpeechTranscriber and DictationTranscriber are not established as comparable. Timestamp overlap may join several tokens into one choice. The LLM reconciliation trial can use both candidates but cannot recover information missing from both, and Arabic rejection may prevent it from running at all.
 
 Privacy and cost are promising properties of this architecture: local inference requires no per-request provider billing. They do not by themselves prove low latency, low battery use, or accuracy. Measure a cold run and repeated warm runs on the actual Mac and iPhone before deciding whether this can replace a daily dictation tool.
+
+## Local personalization
+
+[Apple's contextualStrings documentation](https://developer.apple.com/documentation/speech/analysiscontext/contextualstrings) describes short vocabulary hints for DictationTranscriber and limits them to 100 phrases. Flowstate supplies those hints through AnalysisContext for the dictation pass. This documented support should not be generalized to SpeechTranscriber.
+
+[Apple's prompting guidance](https://developer.apple.com/documentation/foundationmodels/prompting-an-on-device-foundation-model) describes using instructions and examples to guide generation. Flowstate stores user edits locally, retrieves relevant examples, and includes them in cleanup requests. Explicit glossary aliases are handled separately as whole-phrase replacements. Neither mechanism updates the built-in model's weights.
+
+[Foundation Models adapters](https://developer.apple.com/apple-intelligence/foundation-models-adapter/) provide a separate training and deployment route with an adapter entitlement. The POC does not require adapters or an entitlement; its editable local profile provides a smaller experiment that can be compared directly with a baseline.

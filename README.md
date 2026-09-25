@@ -45,6 +45,20 @@ Run the same file again after models are warm. The fixed sequential order can ad
 
 Long transcripts are split on sentence or word boundaries using a conservative UTF-8 budget, with a fresh LLM session per chunk. This bounds context use but loses cross-chunk context. No input tail is deliberately truncated. A model can still omit text; keep the raw transcript. Long candidate overlap groups are split independently for reconciliation and may lose precise alignment. Those results carry a note.
 
+## Glossary and learning from edits
+
+Open **Personalization** to add preferred spellings, optional meanings, and aliases. For example, `Todoist` can have `to-doist` and `to doist` as aliases. Explicit aliases are case-insensitive whole-phrase replacements before and after LLM cleanup. They do not alter the raw speech output. Use narrow aliases: a broad rule can also change a legitimate word.
+
+Choose **Edit & teach** on any raw transcript or cleaned output. Correct the text and select **Save edits as examples**. Flowstate extracts changed phrases with nearby words and saves them as examples for similar future text. This is retrieval of user-approved corrections, not model training. Examples guide the model and may be ignored; they never become automatic replacement rules. Add a glossary alias when you want an explicit replacement.
+
+**Compare personalization on original text** runs cleanup on the same unedited input with personalization off and on, keeping both outputs and timings. This tests text cleanup only. To compare recognition hints, run the audio again with **Use glossary and saved edits** off and on.
+
+The Arabic DictationTranscriber receives up to 100 short vocabulary hints from glossary terms and saved edits. Apple documents this hint mechanism for DictationTranscriber; the POC does not claim SpeechTranscriber uses it. Both engines benefit from glossary handling and relevant examples during cleanup. These features cannot reconstruct missing speech or establish reliable mixed-language recognition.
+
+Preferences are saved to `Flowstate/personalization.json` in the app's local Application Support directory. The Personalization tab shows the exact path. The sandboxed Xcode app and the standalone bundle may have different support directories. There is no cloud sync, and the profile is excluded from system backups. You can edit/delete glossary entries, forget individual edits, clear learned edits, or disable personalization. The app retains at most 100 glossary entries and 200 correction examples, and limits retrieved prompt context to 1,800 UTF-8 bytes per chunk.
+
+Exports include the profile used for a run and the actual context supplied to cleanup. Opening a saved experiment does not install its profile. Old experiment JSON files remain readable. Per-draft comparisons record their own profile snapshot because it may differ from the original run.
+
 ## Command line
 
 ```sh
@@ -54,9 +68,14 @@ swift run flowstate-cli capabilities
 swift run flowstate-cli transcribe /path/to/memo.m4a --mode dual --download-models --output /tmp/experiment.json
 swift run flowstate-cli transcribe /path/to/memo.m4a --mode english --output /tmp/english.json
 swift run flowstate-cli clean /path/to/transcript.txt
+swift run flowstate-cli profile add-term Todoist --aliases 'to-doist,to doist' --note 'Task manager'
+swift run flowstate-cli profile learn /path/to/original.txt /path/to/corrected.txt
+swift run flowstate-cli profile show
 swift test
 ```
 
 `--respect-language-support` skips unsupported Arabic LLM attempts. Without `--output`, the CLI prints JSON; progress goes to stderr. Avoid committing personal recordings or exported transcripts. `Samples/` and `Results/` are ignored for local testing.
+
+`--no-personalization` bypasses the local profile. `--profile /path/to/profile.json` selects a separate profile for experiments without modifying your usual glossary or learned edits. These options work with `clean` and `transcribe`; the profile commands also accept `--profile`.
 
 The source is split into `Sources/FlowCore` for the pipeline, `Sources/Flowstate` for SwiftUI, and `Sources/FlowCLI` for repeatable terminal runs. There are no third-party dependencies. See [research.md](research.md) for API findings and [validation.md](validation.md) for the tests performed, including the supplied Voice Memo.

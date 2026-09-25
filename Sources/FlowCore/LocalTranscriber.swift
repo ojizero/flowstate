@@ -6,6 +6,7 @@ import Speech
     public init() {}
 
     public func transcribe(url: URL, localeID: String, allowDownloads: Bool,
+                           vocabularyHints: [String] = [],
                            status: @escaping StatusHandler = { _ in }) async throws -> TranscriptPass {
         let begin = Date()
         let requested = Locale(identifier: localeID)
@@ -29,7 +30,7 @@ import Speech
             try await prepare(transcriber, locale: locale, allowDownloads: allowDownloads, status: status)
             return try await analyze(file: file, module: transcriber, results: transcriber.results,
                 locale: locale.identifier, engine: "DictationTranscriber", begin: begin,
-                text: { $0.text }, range: { $0.range }, status: status)
+                text: { $0.text }, range: { $0.range }, vocabularyHints: vocabularyHints, status: status)
         }
         throw FlowError("Apple has no supported on-device speech model for \(localeID) on this device. No server fallback was used.")
     }
@@ -56,12 +57,18 @@ import Speech
     private func analyze<R: SpeechModuleResult & Sendable, S: AsyncSequence & Sendable>(
         file: AVAudioFile, module: any SpeechModule, results: S, locale: String, engine: String, begin: Date,
         text: @escaping @Sendable (R) -> AttributedString, range: @escaping @Sendable (R) -> CMTimeRange,
+        vocabularyHints: [String] = [],
         status: StatusHandler
     ) async throws -> TranscriptPass where S.Element == R {
         status("Transcribing \(locale) with \(engine)…")
         let preparationSeconds = Date().timeIntervalSince(begin)
         let audioDuration = Double(file.length) / file.processingFormat.sampleRate
         let analyzer = SpeechAnalyzer(modules: [module])
+        if !vocabularyHints.isEmpty {
+            let context = AnalysisContext()
+            context.contextualStrings[.general] = Array(vocabularyHints.prefix(100))
+            try await analyzer.setContext(context)
+        }
         // Consume results concurrently; finalize after EOF so the last words are not lost.
         let collector = Task { @MainActor in
             var raw = ""
@@ -93,9 +100,11 @@ import Speech
                 guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     throw FlowError("No speech was recognized by \(engine) for \(locale).")
                 }
-                return TranscriptPass(locale: locale, engine: engine, text: raw, tokens: tokens,
+                var pass = TranscriptPass(locale: locale, engine: engine, text: raw, tokens: tokens,
                                       elapsedSeconds: Date().timeIntervalSince(begin),
                                       preparationSeconds: preparationSeconds, audioDurationSeconds: audioDuration)
+                pass.vocabularyHints = vocabularyHints.isEmpty ? nil : Array(vocabularyHints.prefix(100))
+                return pass
             } catch {
                 collector.cancel()
                 await analyzer.cancelAndFinishNow()

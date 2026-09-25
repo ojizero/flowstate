@@ -35,6 +35,11 @@ struct JSONDocument: FileDocument {
     var capabilities: Capabilities?
     var experiment: Experiment?
     var draft = ""
+    var draftOriginal = ""
+    var draftSource = "Merged transcript"
+    var lastLearnedDraft: String?
+    var personalization = PersonalizationProfile()
+    var personalizationPath = ""
     var status = "Choose an exported Voice Memo to begin."
     var error: String?
     var busy = false
@@ -42,7 +47,8 @@ struct JSONDocument: FileDocument {
 
     func run() {
         guard let url, !busy else { return }
-        busy = true; error = nil; experiment = nil; draft = ""
+        busy = true; error = nil; experiment = nil; draft = ""; draftOriginal = ""; lastLearnedDraft = nil
+        let profile = personalization
         task = Task {
             let scoped = url.startAccessingSecurityScopedResource()
             defer {
@@ -53,8 +59,12 @@ struct JSONDocument: FileDocument {
                 experiment = try await ExperimentRunner().run(
                     url: url, mode: mode, allowDownloads: allowDownloads,
                     tryUnsupportedArabic: tryUnsupportedArabic, margin: margin,
+                    personalization: profile,
                     status: { [weak self = self] in self?.status = $0 },
-                    update: { [weak self = self] in self?.experiment = $0; self?.draft = $0.cleanupInput }
+                    update: { [weak self = self] in
+                        self?.experiment = $0; self?.draft = $0.cleanupInput; self?.draftOriginal = $0.cleanupInput
+                        self?.draftSource = "Merged transcript"
+                    }
                 )
                 status = experiment?.passes.isEmpty == true ? "No transcription completed. See the errors below." :
                     "Experiments finished. Compare the results against your recording."
@@ -68,12 +78,15 @@ struct JSONDocument: FileDocument {
         guard !busy, !draft.isEmpty else { return }
         busy = true; error = nil
         let input = draft
+        let profile = personalization
         task = Task {
             defer { busy = false; task = nil }
             let begin = Date()
             var trial = CleanupTrial(id: UUID().uuidString, title: "Edited draft → LLM cleanup", input: input)
+            trial.personalization = profile.enabled ? profile : .disabled
             do {
                 trial.result = try await LocalCleaner().clean(input, tryUnsupportedArabic: tryUnsupportedArabic,
+                    personalization: profile,
                     status: { [weak self = self] in self?.status = $0 })
                 status = "Draft cleanup finished."
             } catch is CancellationError { status = "Cancelled."; return }
@@ -84,12 +97,70 @@ struct JSONDocument: FileDocument {
     }
     func cancel() { task?.cancel(); status = "Cancelling…" }
 
+    func loadPersonalization() {
+        do {
+            let store = try PersonalizationStore.local()
+            personalizationPath = store.url.path
+            personalization = try store.load()
+        } catch { self.error = "Could not load personalization: \(error.localizedDescription)" }
+    }
+
+    func updatePersonalization(_ change: (inout PersonalizationProfile) throws -> Void) {
+        do {
+            let store = try PersonalizationStore.local()
+            var profile = try store.load()
+            try change(&profile)
+            try store.save(profile)
+            personalization = profile; error = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func beginEditing(_ text: String, source: String) {
+        draft = text; draftOriginal = text; draftSource = source; lastLearnedDraft = nil
+    }
+
+    func learnFromDraft() {
+        guard !busy, draft != draftOriginal else { return }
+        var count = 0
+        updatePersonalization { profile in count = try profile.learn(before: draftOriginal, after: draft) }
+        guard error == nil else { return }
+        lastLearnedDraft = draft
+        status = count == 0 ? "No word changes to learn. Whitespace-only edits are not saved." :
+            "Saved \(count) local correction examples. Review or delete them in Personalization."
+    }
+
+    func comparePersonalization() {
+        guard !busy, !draftOriginal.isEmpty else { return }
+        busy = true; error = nil
+        let input = draftOriginal
+        var baseline = PersonalizationProfile(); baseline.enabled = false
+        var enabled = personalization; enabled.enabled = true
+        task = Task {
+            defer { busy = false; task = nil }
+            for (title, profile) in [("Original → cleanup without personalization", baseline),
+                                     ("Original → cleanup with personalization", enabled)] {
+                let begin = Date()
+                var trial = CleanupTrial(id: UUID().uuidString, title: title, input: input)
+                trial.personalization = profile.enabled ? profile : .disabled
+                do {
+                    try Task.checkCancellation()
+                    trial.result = try await LocalCleaner().clean(input, tryUnsupportedArabic: tryUnsupportedArabic,
+                        personalization: profile, status: { [weak self = self] in self?.status = $0 })
+                } catch is CancellationError { status = "Comparison cancelled."; return }
+                catch { trial.error = error.localizedDescription }
+                trial.elapsedSeconds = Date().timeIntervalSince(begin)
+                experiment?.trials.append(trial)
+            }
+            status = "Compared the same original text with personalization off and on."
+        }
+    }
+
     func loadReport(_ url: URL) throws {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
         let report = try decoder.decode(Experiment.self, from: Data(contentsOf: url))
-        experiment = report; draft = report.cleanupInput
+        experiment = report; beginEditing(report.cleanupInput, source: "Merged transcript")
         mode = report.mode; margin = report.mergeMargin
         tryUnsupportedArabic = report.attemptedUnsupportedArabic
         self.url = nil; error = nil
@@ -133,6 +204,8 @@ struct ContentView: View {
                     }
                     Toggle("Allow Apple speech model downloads if needed", isOn: $model.allowDownloads).disabled(model.busy)
                     Toggle("Try LLM Arabic cleanup even when Apple lists it as unsupported", isOn: $model.tryUnsupportedArabic).disabled(model.busy)
+                    Text("Personalization \(model.personalization.enabled ? "on" : "off") · \(model.personalization.glossary.count) glossary terms · \(model.personalization.corrections.count) saved edits")
+                        .font(.caption).foregroundStyle(.secondary)
                     Text("Audio and text processing stay on this device. Initial model downloads need internet access.")
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding(5)
@@ -149,17 +222,20 @@ struct ContentView: View {
             Picker("View", selection: $selection) {
                 Text("Outputs & timings").tag("results")
                 Text("Merge & edit").tag("merge")
+                Text("Personalization").tag("personalization")
                 Text("Device support").tag("support")
             }.pickerStyle(.segmented)
 
             switch selection {
             case "merge": mergeView
             case "support": supportView
+            case "personalization": PersonalizationView(model: model)
             default: resultsView
             }
         }
         .padding(20)
         .task {
+            model.loadPersonalization()
             model.capabilities = await Capabilities.inspect()
             let args = CommandLine.arguments
             if let index = args.firstIndex(of: "--results"), args.indices.contains(index + 1), model.experiment == nil {
@@ -212,6 +288,12 @@ struct ContentView: View {
                                 Text("RTF below 1 means faster than the recording's duration. Preparation includes any model download.")
                                     .font(.caption2).foregroundStyle(.secondary)
                                 transcriptText(pass.text)
+                                Button("Edit & teach") {
+                                    model.beginEditing(pass.text, source: "\(pass.locale) raw transcript"); selection = "merge"
+                                }.disabled(model.busy)
+                                if let hints = pass.vocabularyHints {
+                                    DisclosureGroup("Vocabulary hints used") { Text(hints.joined(separator: ", ")).textSelection(.enabled) }
+                                }
                             }.padding(5)
                         }
                     }
@@ -241,6 +323,14 @@ struct ContentView: View {
                                         }
                                     }
                                     Text(result.note).font(.caption).foregroundStyle(.secondary)
+                                    Button("Edit & teach") {
+                                        model.beginEditing(result.text, source: trial.title); selection = "merge"
+                                    }.disabled(model.busy)
+                                    if let context = result.personalizationContext {
+                                        DisclosureGroup("Personalization supplied to the model") {
+                                            transcriptText(context.joined(separator: "\n\n"))
+                                        }
+                                    }
                                 }
                                 if let error = trial.error {
                                     Text("Failed: \(error)").foregroundStyle(.orange).textSelection(.enabled)
@@ -268,8 +358,16 @@ struct ContentView: View {
                     Text(model.margin, format: .number.precision(.fractionLength(2))).monospacedDigit()
                 }
                 Text("The margin applies to the next run. Edit this draft to test cleanup independently.").font(.caption)
+                Text("Editing: \(model.draftSource)").font(.headline)
                 TextEditor(text: $model.draft).frame(minHeight: 180).border(.quaternary).disabled(model.busy)
                 Button("Clean edited draft") { model.cleanDraft() }.disabled(model.busy || model.draft.isEmpty)
+                Button("Save edits as examples") { model.learnFromDraft() }
+                    .disabled(model.busy || model.draft.isEmpty || model.draft == model.draftOriginal || model.draft == model.lastLearnedDraft)
+                Button("Compare personalization on original text") {
+                    model.comparePersonalization(); selection = "results"
+                }.disabled(model.busy || model.draftOriginal.isEmpty)
+                Text("Saving extracts short before/after examples for future prompts. Only explicit glossary aliases act as replacement rules. The original transcript is preserved.")
+                    .font(.caption).foregroundStyle(.secondary)
                 if let merge = model.experiment?.merge {
                     ForEach(merge.decisions) { decision in
                         GroupBox {

@@ -37,6 +37,7 @@ public struct TranscriptPass: Codable, Sendable {
     public var elapsedSeconds: Double
     public var preparationSeconds: Double
     public var audioDurationSeconds: Double
+    public var vocabularyHints: [String]?
     public var transcriptionSeconds: Double { max(0, elapsedSeconds - preparationSeconds) }
     public var realtimeFactor: Double? { audioDurationSeconds > 0 ? transcriptionSeconds / audioDurationSeconds : nil }
     public init(locale: String, engine: String, text: String, tokens: [SpeechToken], elapsedSeconds: Double,
@@ -67,6 +68,8 @@ public struct CleanupResult: Codable, Sendable {
     public var method: String
     public var note: String
     public var elapsedSeconds: Double
+    public var personalizationContext: [String]?
+    public var aliasReplacements: Int?
 }
 
 public struct Experiment: Codable, Sendable {
@@ -83,7 +86,8 @@ public struct Experiment: Codable, Sendable {
     public var mergeMargin: Double = 0.15
     public var attemptedUnsupportedArabic = true
     public var allowedModelDownloads = false
-    public var pipelineVersion = "2"
+    public var pipelineVersion = "3"
+    public var personalization: PersonalizationProfile?
     public init(sourceName: String, mode: TranscriptionMode) {
         self.sourceName = sourceName; self.mode = mode
     }
@@ -102,6 +106,7 @@ public struct CleanupTrial: Codable, Sendable, Identifiable {
     public var result: CleanupResult?
     public var error: String?
     public var elapsedSeconds: Double
+    public var personalization: PersonalizationProfile?
     public init(id: String, title: String, input: String, result: CleanupResult? = nil,
                 error: String? = nil, elapsedSeconds: Double = 0) {
         self.id = id; self.title = title; self.input = input

@@ -5,6 +5,7 @@ import Foundation
 
     public func run(url: URL, mode: TranscriptionMode, allowDownloads: Bool = false,
                     tryUnsupportedArabic: Bool = true, margin: Double = 0.15,
+                    personalization: PersonalizationProfile = .init(),
                     status: @escaping StatusHandler = { _ in },
                     update: @escaping @MainActor @Sendable (Experiment) -> Void = { _ in }) async throws -> Experiment {
         var experiment = Experiment(sourceName: url.lastPathComponent, mode: mode)
@@ -12,13 +13,15 @@ import Foundation
         experiment.mergeMargin = margin
         experiment.attemptedUnsupportedArabic = tryUnsupportedArabic
         experiment.allowedModelDownloads = allowDownloads
+        experiment.personalization = personalization.enabled ? personalization : nil
         let transcriber = LocalTranscriber()
         // Separate passes avoid competing speech models and make stage timings easier to interpret.
         for locale in mode.locales {
             try Task.checkCancellation()
             let attemptBegin = Date()
             do {
-                let pass = try await transcriber.transcribe(url: url, localeID: locale, allowDownloads: allowDownloads, status: status)
+                let pass = try await transcriber.transcribe(url: url, localeID: locale, allowDownloads: allowDownloads,
+                    vocabularyHints: personalization.speechHints, status: status)
                 experiment.passes.append(pass)
             } catch is CancellationError { throw CancellationError() }
             catch {
@@ -47,7 +50,8 @@ import Foundation
             let begin = Date()
             var trial = CleanupTrial(id: input.id, title: input.title, input: input.text)
             do {
-                trial.result = try await cleaner.clean(input.text, tryUnsupportedArabic: tryUnsupportedArabic, status: status)
+                trial.result = try await cleaner.clean(input.text, tryUnsupportedArabic: tryUnsupportedArabic,
+                                                      personalization: personalization, status: status)
             } catch is CancellationError { throw CancellationError() }
             catch {
                 try Task.checkCancellation()
@@ -62,7 +66,7 @@ import Foundation
             let begin = Date()
             var trial = CleanupTrial(id: "reconcile", title: "Both candidates → LLM reconcile + clean",
                                      input: "Timestamped candidates in the exported merge decisions.")
-            do { trial.result = try await cleaner.reconcile(merge, status: status) }
+            do { trial.result = try await cleaner.reconcile(merge, personalization: personalization, status: status) }
             catch is CancellationError { throw CancellationError() }
             catch {
                 try Task.checkCancellation()
